@@ -6,7 +6,7 @@ This library works with any server-side JavaScript environment: Deno, Bun and No
 do:
 
 ```shell
-npx jsr add @creit-tech/stellar-wallets-kit
+npx jsr add @stellar-indexer/stellar-indexer-sdk
 ```
 
 > You can check more download options here: https://jsr.io/@stellar-indexer/stellar-indexer-sdk
