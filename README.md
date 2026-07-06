@@ -22,8 +22,11 @@ import { StellarIndexerSdk } from "@stellar-indexer/stellar-indexer-sdk";
 const sdk: StellarIndexerSdk = new StellarIndexerSdk({consumerToken: "CONSUMER_TOKEN"});
 ```
 
-> Important: the kit uses the `@stellar/stellar-xdr-json` library, this one needs to use WASM so the kit will
-> automatically start it, but if you prefer to do it yourself you can pass `skipWASM: true` when starting the kit
+> Note: the kit uses the `@stellar/stellar-xdr-json` library, which needs to use WASM, so the kit will automatically
+> start it, but if you prefer to do it yourself, you can pass `skipWASM: true` when starting the kit
+>
+> Note 2: If you're using Deno, you need to provide the path to the `.wasm` module in the `--allow-read=PATH_HERE`
+> option (or just `--allow-read` to allow all reads)
 
 ## Contracts' Data Package
 

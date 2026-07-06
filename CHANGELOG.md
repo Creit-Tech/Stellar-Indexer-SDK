@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file. See
 
 #### Fix
 
-- Auto start the WASM module if the user has
+- Auto start the WASM module if the environment hasn't
 - Export the StellarDomains extension
 
 ### 0.0.1 (2026-07-04)
