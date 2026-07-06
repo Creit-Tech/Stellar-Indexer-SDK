@@ -1,6 +1,7 @@
 import {
   any,
   array,
+  boolean,
   custom,
   type CustomIssue,
   type CustomSchema,
@@ -56,6 +57,7 @@ export type StellarIndexerSdkParamsInput = InferInput<typeof StellarIndexerSdkPa
 export const StellarIndexerSdkParamsSchema = object({
   consumerToken: string(),
   apiUrl: optional(string(), "https://api.stellarindexer.com"),
+  skipWASM: optional(boolean(), false),
 });
 export type StellarIndexerSdkParamsOutput = InferOutput<typeof StellarIndexerSdkParamsSchema>;
 

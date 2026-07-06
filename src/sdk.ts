@@ -11,6 +11,7 @@ import {
 } from "./schemas.ts";
 import wretch from "wretch";
 import QueryStringAddon from "wretch/addons/queryString";
+import initWASM from "@stellar/stellar-xdr-json";
 
 /**
  * Base class for the Stellar Indexer SDK.
@@ -20,6 +21,8 @@ import QueryStringAddon from "wretch/addons/queryString";
 export class StellarIndexerSdk {
   #apiUrl: string;
   #consumerToken: string;
+  #skipWASM: boolean;
+  #wasmStarted: boolean = false;
 
   get #api() {
     return wretch(this.#apiUrl).addon(QueryStringAddon).headers({ "authorization": `Bearer ${this.#consumerToken}` });
@@ -29,6 +32,13 @@ export class StellarIndexerSdk {
     const parsed: StellarIndexerSdkParamsOutput = parse(StellarIndexerSdkParamsSchema, params);
     this.#apiUrl = parsed.apiUrl;
     this.#consumerToken = parsed.consumerToken;
+    this.#skipWASM = parsed.skipWASM;
+  }
+
+  async #startWasm(): Promise<void> {
+    if (this.#skipWASM || this.#wasmStarted) return;
+    await initWASM();
+    this.#wasmStarted = true;
   }
 
   /**
@@ -44,6 +54,7 @@ export class StellarIndexerSdk {
    * @param params.orderBy - Either `timestamp` or `none` (default timestamp)
    */
   async fetchContractData(params: FetchContractDataBodyInput): Promise<ContractData[]> {
+    await this.#startWasm();
     const payload: FetchContractDataBodyOutput = parse(FetchContractDataBodySchema, params);
     const result: unknown[] = await this.#api.url("/v1/contract-data/").post(payload).json();
     return await Promise.all(result.map((r) => parseAsync(ContractDataSchema, r)));

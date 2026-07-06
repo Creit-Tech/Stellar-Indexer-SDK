@@ -22,13 +22,16 @@ import { StellarIndexerSdk } from "@stellar-indexer/stellar-indexer-sdk";
 const sdk: StellarIndexerSdk = new StellarIndexerSdk({consumerToken: "CONSUMER_TOKEN"});
 ```
 
+> Important: the kit uses the `@stellar/stellar-xdr-json` library, this one needs to use WASM so the kit will
+> automatically start it, but if you prefer to do it yourself you can pass `skipWASM: true` when starting the kit
+
 ## Contracts' Data Package
 
 The Contracts' Data package from the Stellar Indexer gives you access to all the live data on the Stellar Smart
 Contracts platform with a single endpoint. You can interact with it using the following method:
 
 ```typescript
-const [ data ]: ContractData[] = await this.fetchContractData({
+const [ data ]: ContractData[] = await sdk.fetchContractData({
   contracts: [ "CAJJZSGMMM3PD7N33TAPHGBUGTB43OC73HVIK2L2G6BNGGGYOSSYBXBD" ],
   key: [ {_: "ledger_key_contract_instance"} ],
   limit: 1,
@@ -39,7 +42,7 @@ const [ data ]: ContractData[] = await this.fetchContractData({
 In the example above, we get the instance storage record from a Blend pool, but we can do more complex stuff like this:
 
 ```typescript
-const data: ContractData[] = await this.fetchContractData({
+const data: ContractData[] = await sdk.fetchContractData({
   contracts: POOLS_IDS,
   key: [
     {_: "ledger_key_contract_instance"},
@@ -70,3 +73,16 @@ StellarDomains.
 
 Extension classes should take care of validations and parsing the information, as well as exposing schemas developers
 can use to know the structure of the data they will receive.
+
+### How to import the extensions
+
+To use the extensions from the kit you need to import them directly from the `./protocols` path like this:
+
+```typescript
+import { BlendIndexerSdk } from '@stellar-indexer/stellar-indexer-sdk/protocols/blend'
+
+const sdk = new BlendIndexerSdk(params);
+```
+
+Extensions already extend the base class so you can call directly the base class methods if you need to do something the
+extension doesn't do. 
