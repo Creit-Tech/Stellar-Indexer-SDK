@@ -24,7 +24,7 @@ export class StellarIndexerSdk {
   #skipWASM: boolean;
   #wasmStarted: boolean = false;
 
-  get #api() {
+  get api() {
     return wretch(this.#apiUrl).addon(QueryStringAddon).headers({ "authorization": `Bearer ${this.#consumerToken}` });
   }
 
@@ -35,7 +35,7 @@ export class StellarIndexerSdk {
     this.#skipWASM = parsed.skipWASM;
   }
 
-  async #startWasm(): Promise<void> {
+  async startWasm(): Promise<void> {
     if (this.#skipWASM || this.#wasmStarted) return;
     await initWASM();
     this.#wasmStarted = true;
@@ -54,9 +54,9 @@ export class StellarIndexerSdk {
    * @param params.orderBy - Either `timestamp` or `none` (default timestamp)
    */
   async fetchContractData(params: FetchContractDataBodyInput): Promise<ContractData[]> {
-    await this.#startWasm();
+    await this.startWasm();
     const payload: FetchContractDataBodyOutput = parse(FetchContractDataBodySchema, params);
-    const result: unknown[] = await this.#api.url("/v1/contract-data/").post(payload).json();
+    const result: unknown[] = await this.api.url("/v1/contract-data/").post(payload).json();
     return await Promise.all(result.map((r) => parseAsync(ContractDataSchema, r)));
   }
 }
