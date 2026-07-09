@@ -1,6 +1,7 @@
 import {
   any,
   array,
+  bigint,
   boolean,
   custom,
   type CustomIssue,
@@ -21,6 +22,7 @@ import {
   pipe,
   record,
   string,
+  toBigint,
   toDate,
   transform,
   union,
@@ -71,7 +73,9 @@ export const FetchContractDataBodySchema = object({
   sort: optional(union([literal("desc"), literal("asc")]), "desc"),
   orderBy: optional(union([literal("timestamp"), literal("none")]), "timestamp"),
 });
-export type FetchContractDataBodyOutput = InferOutput<typeof FetchContractDataBodySchema>;
+export type FetchContractDataBodyOutput = InferOutput<
+  typeof FetchContractDataBodySchema
+>;
 
 export const ContractDataSchema = object({
   id: string(),
@@ -106,3 +110,26 @@ export const ContractDataSchema = object({
   deleted_at: union([pipe(string(), toDate(), date()), null_()]),
 });
 export type ContractData = InferOutput<typeof ContractDataSchema>;
+
+export const ContractEventSchema = object({
+  id: string(),
+  contract_id: IsStellarContract(),
+  topics: pipe(
+    record(string(), any()),
+    transform((data) => {
+      return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify({ vec: Object.values(data) })), "base64"));
+    }),
+  ),
+  data: pipe(
+    record(string(), any()),
+    transform((data) => {
+      return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify(data)), "base64"));
+    }),
+  ),
+  index: number(),
+  tx_meta_version: number(),
+  sequence: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  timestamp: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  tx_hash: string(),
+});
+export type ContractEvent = InferOutput<typeof ContractEventSchema>;
