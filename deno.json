@@ -1,12 +1,13 @@
 {
   "name": "@stellar-indexer/stellar-indexer-sdk",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "exports": {
     ".": "./src/mod.ts",
     "./protocols/blend": "./src/protocols/blend/mod.ts",
     "./protocols/stellardomains": "./src/protocols/stellardomains/mod.ts",
     "./protocols/reflector": "./src/protocols/reflector/mod.ts",
-    "./protocols/xbull-swap": "./src/protocols/xbull-swap/mod.ts"
+    "./protocols/xbull-swap": "./src/protocols/xbull-swap/mod.ts",
+    "./protocols/axis-markets": "./src/protocols/axis-markets/mod.ts"
   },
   "imports": {
     "@std/collections": "jsr:@std/collections@1.3.0",

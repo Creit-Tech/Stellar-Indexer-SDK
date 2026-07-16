@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 0.0.5 (2026-07-15)
+
+#### Add
+
+- New protocol supported: Axis Markets
+- Support setting the network in the SDK
+
 ### 0.0.4 (2026-07-09)
 
 #### Add

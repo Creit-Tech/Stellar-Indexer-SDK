@@ -7,6 +7,7 @@ import {
   type CustomIssue,
   type CustomSchema,
   date,
+  enum_,
   type InferInput,
   type InferOutput,
   integer,
@@ -27,7 +28,7 @@ import {
   transform,
   union,
 } from "@valibot/valibot";
-import { scValToNative, StrKey, xdr } from "@stellar/stellar-sdk";
+import { Networks, scValToNative, StrKey, xdr } from "@stellar/stellar-sdk";
 import { encode } from "@stellar/stellar-xdr-json";
 
 export type RecursivePartial<T> = {
@@ -58,7 +59,8 @@ export const IsStellarAddress = (): CustomSchema<string, string> =>
 export type StellarIndexerSdkParamsInput = InferInput<typeof StellarIndexerSdkParamsSchema>;
 export const StellarIndexerSdkParamsSchema = object({
   consumerToken: string(),
-  apiUrl: optional(string(), "https://api.stellarindexer.com"),
+  apiUrl: optional(string()),
+  network: optional(enum_(Networks), Networks.PUBLIC),
   skipWASM: optional(boolean(), false),
 });
 export type StellarIndexerSdkParamsOutput = InferOutput<typeof StellarIndexerSdkParamsSchema>;

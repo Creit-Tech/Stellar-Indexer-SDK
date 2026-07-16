@@ -12,6 +12,7 @@ import {
 import wretch from "wretch";
 import QueryStringAddon from "wretch/addons/queryString";
 import initWASM from "@stellar/stellar-xdr-json";
+import { Networks } from "@stellar/stellar-sdk";
 
 /**
  * Base class for the Stellar Indexer SDK.
@@ -30,7 +31,11 @@ export class StellarIndexerSdk {
 
   constructor(params?: StellarIndexerSdkParamsInput) {
     const parsed: StellarIndexerSdkParamsOutput = parse(StellarIndexerSdkParamsSchema, params);
-    this.#apiUrl = parsed.apiUrl;
+    if (parsed.apiUrl) {
+      this.#apiUrl = parsed.apiUrl;
+    } else {
+      this.#apiUrl = parsed.network === Networks.PUBLIC ? "https://api.stellarindexer.com" : "https://api-testnet.stellarindexer.com";
+    }
     this.#consumerToken = parsed.consumerToken;
     this.#skipWASM = parsed.skipWASM;
   }
