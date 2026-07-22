@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 0.0.6 (2026-07-22)
+
+#### Change
+
+- Fully refactor the Blend extension so it uses the new custom endpoints instead of manually doing everything
+- Update the Axis Markets documentation so it follows the Blend doc stlye
+
 ### 0.0.5 (2026-07-15)
 
 #### Add
