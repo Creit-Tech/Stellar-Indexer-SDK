@@ -1,3 +1,4 @@
 .idea
 # For now we don't want to publish tests
+test.ts
 *.test.ts
