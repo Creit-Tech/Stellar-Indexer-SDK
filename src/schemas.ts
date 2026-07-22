@@ -79,6 +79,7 @@ export type FetchContractDataBodyOutput = InferOutput<
   typeof FetchContractDataBodySchema
 >;
 
+export type ContractDataInput = InferInput<typeof ContractDataSchema>;
 export const ContractDataSchema = object({
   id: string(),
   contract_id: IsStellarContract(),
@@ -108,29 +109,49 @@ export const ContractDataSchema = object({
   ),
   last_modified_ledger_seq: number(),
   tx_meta_version: number(),
-  timestamp: number(),
-  deleted_at: union([pipe(string(), toDate(), date()), null_()]),
+  timestamp: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  deleted_at: union([pipe(string(), toDate(), date()), date(), null_()]),
 });
 export type ContractData = InferOutput<typeof ContractDataSchema>;
+
+export type ContractDataSnapShotInput = InferInput<typeof ContractDataSnapShotSchema>;
+export const ContractDataSnapShotSchema = object({
+  id: string(),
+  contract_data_id: ContractDataSchema.entries.id,
+  val: ContractDataSchema.entries.val,
+  ledger: number(),
+  tx_meta_version: ContractDataSchema.entries.tx_meta_version,
+  timestamp: ContractDataSchema.entries.timestamp,
+});
+export type ContractDataSnapShotOutput = InferOutput<typeof ContractDataSnapShotSchema>;
 
 export const ContractEventSchema = object({
   id: string(),
   contract_id: IsStellarContract(),
-  topics: pipe(
-    record(string(), any()),
-    transform((data) => {
-      return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify({ vec: Object.values(data) })), "base64"));
-    }),
-  ),
+  topics: union([
+    array(any()),
+    pipe(
+      record(string(), any()),
+      transform((data) => {
+        return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify({ vec: Object.values(data) })), "base64"));
+      }),
+    ),
+  ]),
   data: pipe(
     record(string(), any()),
     transform((data) => {
-      return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify(data)), "base64"));
+      try {
+        return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify(data)), "base64"));
+      } catch {
+        // If the parsing doesn't work, we return the regular data because we assume this record was already parsed
+        // And the `topics` validation already passed
+        return data;
+      }
     }),
   ),
   index: number(),
   tx_meta_version: number(),
-  sequence: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  sequence: number(),
   timestamp: union([pipe(string(), toBigint(), bigint()), bigint()]),
   tx_hash: string(),
 });

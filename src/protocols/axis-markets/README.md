@@ -1,45 +1,150 @@
-# Axis Markets Extension for the Stellar Indexer SDK
+# Axis Markets Indexer SDK
 
-This extension uses the custom endpoints from the Stellar Indexer service designed for Axis Markets. This extension
-requires a token that has access to the contracts' data package and to the events archive package.
+> A TypeScript SDK extension for querying Axis Markets data from the Stellar Indexer API.
 
-## Features
+The `AxisMarketsIndexerSdk` extends the base `StellarIndexerSdk` to provide typed access to Axis Markets protocol data —
+orders, trades, swaps, and market depth — with runtime validation powered by [Valibot](https://valibot.dev/).
 
-- 🔒 **Runtime validation** — Inputs and API responses are validated with [Valibot](https://valibot.dev/) schemas.
-- 🌐 **Network switching** — Change the target Stellar network at runtime via `setNetwork`.
-- 🔢 **BigInt‑safe** — Numeric fields (amounts, prices, IDs) are coerced from strings into `bigint` to avoid precision
-  loss.
-- ⚡ **Automatic WASM init** — Each request ensures the `@stellar/stellar-xdr-json` WASM runtime is initialized (can be
-  skipped via config).
-- 🔑 **Authenticated requests** — Requests are sent with a Bearer token through [
-  `wretch`](https://github.com/elbywan/wretch).
-- 📦 **Fully typed** — Complete TypeScript types for every parameter and result.
+This extension requires a token that has access to the contracts' data package and to the events archive package.
+
+---
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Supported Networks](#supported-networks)
+- [API Reference](#api-reference)
+    - [Order Methods](#order-methods)
+    - [Trade Methods](#trade-methods)
+    - [Swap Methods](#swap-methods)
+    - [Market Depth Methods](#market-depth-methods)
+    - [Network Methods](#network-methods)
+- [Types & Schemas](#types--schemas)
+- [How It Works](#how-it-works)
+- [Examples](#examples)
+
+---
 
 ## Installation
 
-```bash
-# npm
-npm install @creit-tech/stellar-indexer-sdk
+This library works with any server-side JavaScript environment: Deno, Bun and Node.js. To install the base library (
+which includes the protocol extensions), you can do:
 
-# deno
-deno add @creit-tech/stellar-indexer-sdk
+```textmate
+npx jsr add @stellar-indexer/stellar-indexer-sdk
 ```
 
-> Peer dependencies: `@valibot/valibot`, `@stellar/stellar-sdk`, `@stellar/stellar-xdr-json`, and `wretch`.
+> You can check more download options here: https://jsr.io/@stellar-indexer/stellar-indexer-sdk
+
+---
+
+## Features
+
+- **Runtime validation** — Inputs and API responses are validated with [Valibot](https://valibot.dev/) schemas.
+- **Network switching** — Change the target Stellar network at runtime via `setNetwork`.
+- **BigInt-safe** — Numeric fields (amounts, prices, IDs) are coerced from strings into `bigint` to avoid precision
+  loss.
+- **WASM-powered XDR parsing** — Automatically initializes `@stellar/stellar-xdr-json` for decoding Stellar contract
+  event topics/data.
+- **Authenticated requests** — Requests are sent with a Bearer token through
+  [`wretch`](https://github.com/elbywan/wretch).
+- **Fully typed** — Complete TypeScript types for every parameter and result.
+- **Base SDK methods included** — Since `AxisMarketsIndexerSdk` extends `StellarIndexerSdk`, you can also call base
+  class methods like `fetchContractData` directly on the same instance.
+
+---
+
+## Quick Start
+
+To start the SDK, you need to provide a `consumer token` with access to the contracts' data package and to the events
+archive package.
+
+```typescript
+import { Networks } from "@stellar/stellar-sdk";
+import { AxisMarketsIndexerSdk } from "@creit-tech/stellar-indexer-sdk/axis-markets";
+
+const sdk = new AxisMarketsIndexerSdk({
+  consumerToken: "CONSUMER_TOKEN",
+  network: Networks.TESTNET,
+});
+
+// Query orders for a specific owner
+const orders = await sdk.queryOrders({
+  owner: "GABC...XYZ",
+  limit: 100,
+});
+console.log(orders.length);
+
+// Fetch a single order by ID
+const order = await sdk.fetchOrder(42n);
+console.log(order.owner, order.kind);
+```
+
+> **Note:** The kit uses the `@stellar/stellar-xdr-json` library, which needs to use WASM, so the kit will automatically
+> start it, but if you prefer to do it yourself, you can pass `skipWASM: true` when starting the kit.
+>
+> **Note for Deno users:** You need to provide the path to the `.wasm` module in the `--allow-read=PATH_HERE` option (or
+> just `--allow-read` to allow all reads).
+
+---
+
+## Configuration
+
+The `AxisMarketsIndexerSdk` constructor accepts an `AxisMarketsIndexerParamsInput` object that extends the base SDK
+params.
+
+### Required
+
+| Parameter       | Type     | Description                                                                                                                            |
+|-----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `consumerToken` | `string` | Bearer token used to authenticate against the Stellar Indexer API. Requires access to the contracts' data and events archive packages. |
+
+### Network Selection
+
+| Parameter | Type                  | Description                                                                                               |
+|-----------|-----------------------|-----------------------------------------------------------------------------------------------------------|
+| `network` | `Networks`            | Selects the API endpoint. Defaults to `PUBLIC`. Note: Axis Markets is currently only deployed on Testnet. |
+| `apiUrl`  | `string` *(optional)* | Override the API base URL. If omitted, it's derived from `network`.                                       |
+
+### Additional Options *(all optional, with defaults)*
+
+| Parameter  | Type      | Default | Description                                     |
+|------------|-----------|---------|-------------------------------------------------|
+| `skipWASM` | `boolean` | `false` | Skip WASM initialization (disable XDR parsing). |
+
+> Config is validated against `AxisMarketsIndexerParamsSchema` at construction time — invalid input throws immediately.
+
+### Example: Custom Configuration
+
+```typescript
+import { Networks } from "@stellar/stellar-sdk";
+import { AxisMarketsIndexerSdk } from "@creit-tech/stellar-indexer-sdk/axis-markets";
+
+const sdk = new AxisMarketsIndexerSdk({
+  consumerToken: process.env.STELLAR_INDEXER_TOKEN!,
+  network: Networks.TESTNET,
+  skipWASM: false,
+});
+```
+
+---
 
 ## Supported Networks
 
 Axis Markets is currently only deployed on **Testnet**. The contract ID is:
 
-```ts
+```typescript
 export const AXIS_MARKETS_TESTNET =
   "CCJQB4EEQLBL7RHIPYMYG26ZT2QRKEYNGVWWL2EPZCECFI6GZGNXMIEX";
 ```
 
 A helper is exported to resolve the contract ID for a given network:
 
-```ts
-import { getAxisMarketsContractId } from "./schemas.ts";
+```typescript
+import { getAxisMarketsContractId } from "@creit-tech/stellar-indexer-sdk/axis-markets/schemas";
 import { Networks } from "@stellar/stellar-sdk";
 
 getAxisMarketsContractId(Networks.TESTNET); // ✅ returns the contract ID
@@ -49,47 +154,36 @@ getAxisMarketsContractId(Networks.PUBLIC);  // ❌ throws — not deployed
 > ⚠️ Calling `getAxisMarketsContractId` with `PUBLIC`, `FUTURENET`, `SANDBOX`, or `STANDALONE` throws, since the
 > contract is not available there.
 
-## Configuration
-
-The constructor accepts the base `StellarIndexerSdk` parameters plus an optional `network` field.
-
-| Field           | Type       | Required | Default              | Description                                                 |
-|-----------------|------------|----------|----------------------|-------------------------------------------------------------|
-| `consumerToken` | `string`   | ✅ Yes    | —                    | API bearer token used to authenticate requests.             |
-| `apiUrl`        | `string`   | No       | *(base SDK default)* | Base URL of the indexer API.                                |
-| `skipWASM`      | `boolean`  | No       | `false`              | If `true`, skips initializing the Stellar XDR WASM runtime. |
-| `network`       | `Networks` | No       | `Networks.PUBLIC`    | Stellar network used by the Axis Markets extension.         |
-
-Config is validated against `AxisMarketsIndexerParamsSchema` at construction time — invalid input throws immediately.
-
-## Usage
-
-### Initialization
-
-```ts
-import { AxisMarketsIndexerSdk } from "@creit-tech/stellar-indexer-sdk/axis-markets";
-import { Networks } from "@stellar/stellar-sdk";
-
-const sdk = new AxisMarketsIndexerSdk({
-  consumerToken: "YOUR_API_TOKEN",
-  network: Networks.TESTNET,
-});
-```
-
-### Switching networks
-
-```ts
-sdk.setNetwork(Networks.TESTNET);
-```
+---
 
 ## API Reference
 
-### `queryOrders(params)`
+All methods are `async` and return validated, typed data. WASM is initialized lazily on first call (unless `skipWASM` is
+set).
 
-Fetch orders. **At least one of `owner`, `buying`, or `selling` must be provided.** Results are returned from most
+### Order Methods
+
+#### `queryOrders(params): Promise<AxisMarketsOrderOutput[]>`
+
+Fetches **orders**. At least one of `owner`, `buying`, or `selling` must be provided. Results are returned from most
 recently updated to oldest.
 
-```ts
+| Parameter | Type                               | Description                    |
+|-----------|------------------------------------|--------------------------------|
+| `params`  | `AxisMarketsFetchUserOrdersParams` | Query & pagination (optional). |
+
+`AxisMarketsFetchUserOrdersParams`:
+
+| Field                 | Type      | Default | Notes                                             |
+|-----------------------|-----------|---------|---------------------------------------------------|
+| `owner`               | `string`  | —       | The owner of the order.                           |
+| `buying`              | `string`  | —       | The buying asset (contract).                      |
+| `selling`             | `string`  | —       | The selling asset (contract).                     |
+| `includeClosedOrders` | `boolean` | `false` | Include orders already removed from the contract. |
+| `limit`               | `number`  | `100`   | Max `200` per call.                               |
+| `page`                | `number`  | `0`     | Zero-based page index.                            |
+
+```typescript
 const orders = await sdk.queryOrders({
   owner: "GABC...XYZ",
   buying: "CBUY...",
@@ -100,40 +194,41 @@ const orders = await sdk.queryOrders({
 });
 ```
 
-**Params — `AxisMarketsFetchUserOrdersParams`**
+#### `fetchOrder(id): Promise<AxisMarketsOrderOutput>`
 
-| Field                 | Type       | Description                                       |
-|-----------------------|------------|---------------------------------------------------|
-| `owner`               | `string?`  | The owner of the order.                           |
-| `buying`              | `string?`  | The buying asset (contract).                      |
-| `selling`             | `string?`  | The selling asset (contract).                     |
-| `includeClosedOrders` | `boolean?` | Include orders already removed from the contract. |
-| `limit`               | `number?`  | Records per call (max **200**, default **100**).  |
-| `page`                | `number?`  | Result page (default **0**).                      |
+Fetches a **single order** by its ID. Accepts a `bigint`, `string`, or `number` (internally stringified for the request
+path).
 
-- **HTTP:** `GET /v1/protocols/axis-markets/orders`
-- **Returns:** `Promise<AxisMarketsOrderOutput[]>`
+| Parameter | Type                         | Description                                            |
+|-----------|------------------------------|--------------------------------------------------------|
+| `id`      | `bigint \| string \| number` | Order ID. Internally stringified for the request path. |
 
----
-
-### `fetchOrder(id)`
-
-Fetch a single order by its ID. Accepts a `bigint`, `string`, or `number` (internally stringified for the request path).
-
-```ts
+```typescript
 const order = await sdk.fetchOrder(42n);
 ```
 
-- **HTTP:** `GET /v1/protocols/axis-markets/orders/:id`
-- **Returns:** `Promise<AxisMarketsOrderOutput>`
+### Trade Methods
 
----
+#### `queryLastTrades(params): Promise<AxisMarketsTradeEventOutput[]>`
 
-### `queryLastTrades(params)`
+Fetches the **most recent trade events**.
 
-Query the most recent trade events.
+| Parameter | Type                           | Description                     |
+|-----------|--------------------------------|---------------------------------|
+| `params`  | `AxisMarketsQueryTradesParams` | Filter & pagination (optional). |
 
-```ts
+`AxisMarketsQueryTradesParams`:
+
+| Field     | Type     | Default | Notes                     |
+|-----------|----------|---------|---------------------------|
+| `buying`  | `string` | —       | The buying asset.         |
+| `selling` | `string` | —       | The selling asset.        |
+| `maker`   | `string` | —       | The creator of the order. |
+| `taker`   | `string` | —       | The trader.               |
+| `limit`   | `number` | `100`   | Max `200` per call.       |
+| `page`    | `number` | `0`     | Zero-based page index.    |
+
+```typescript
 const trades = await sdk.queryLastTrades({
   buying: "CBUY...",
   selling: "CSELL...",
@@ -144,27 +239,27 @@ const trades = await sdk.queryLastTrades({
 });
 ```
 
-**Params — `AxisMarketsQueryTradesParams`**
+### Swap Methods
 
-| Field     | Type      | Description                                      |
-|-----------|-----------|--------------------------------------------------|
-| `buying`  | `string?` | The buying asset.                                |
-| `selling` | `string?` | The selling asset.                               |
-| `maker`   | `string?` | The creator of the order.                        |
-| `taker`   | `string?` | The trader.                                      |
-| `limit`   | `number?` | Records per call (max **200**, default **100**). |
-| `page`    | `number?` | Result page (default **0**).                     |
+#### `queryLastSwaps(params): Promise<AxisMarketsSwapEventOutput[]>`
 
-- **HTTP:** `GET /v1/protocols/axis-markets/last-trades`
-- **Returns:** `Promise<AxisMarketsTradeEventOutput[]>`
+Fetches the **most recent swap events**.
 
----
+| Parameter | Type                          | Description                     |
+|-----------|-------------------------------|---------------------------------|
+| `params`  | `AxisMarketsQuerySwapsParams` | Filter & pagination (optional). |
 
-### `queryLastSwaps(params)`
+`AxisMarketsQuerySwapsParams`:
 
-Query the most recent swap events.
+| Field     | Type     | Default | Notes                          |
+|-----------|----------|---------|--------------------------------|
+| `buying`  | `string` | —       | The buying asset.              |
+| `selling` | `string` | —       | The selling asset.             |
+| `trader`  | `string` | —       | The trader executing the swap. |
+| `limit`   | `number` | `100`   | Max `200` per call.            |
+| `page`    | `number` | `0`     | Zero-based page index.         |
 
-```ts
+```typescript
 const swaps = await sdk.queryLastSwaps({
   buying: "CBUY...",
   selling: "CSELL...",
@@ -174,26 +269,24 @@ const swaps = await sdk.queryLastSwaps({
 });
 ```
 
-**Params — `AxisMarketsQuerySwapsParams`**
+### Market Depth Methods
 
-| Field     | Type      | Description                                      |
-|-----------|-----------|--------------------------------------------------|
-| `buying`  | `string?` | The buying asset.                                |
-| `selling` | `string?` | The selling asset.                               |
-| `trader`  | `string?` | The trader executing the swap.                   |
-| `limit`   | `number?` | Records per call (max **200**, default **100**). |
-| `page`    | `number?` | Result page (default **0**).                     |
+#### `fetchMarketDepth(params): Promise<AxisMarketsMarketDepthResultOutput>`
 
-- **HTTP:** `GET /v1/protocols/axis-markets/last-swaps`
-- **Returns:** `Promise<AxisMarketsSwapEventOutput[]>`
+Fetches the **current market depth** (order book) for a market.
 
----
+| Parameter | Type                           | Description               |
+|-----------|--------------------------------|---------------------------|
+| `params`  | `AxisMarketsMarketDepthParams` | Market filter (optional). |
 
-### `fetchMarketDepth(params)`
+`AxisMarketsMarketDepthParams`:
 
-Fetch the current market depth (order book) for a market.
+| Field     | Type     | Default | Notes              |
+|-----------|----------|---------|--------------------|
+| `buying`  | `string` | —       | The buying asset.  |
+| `selling` | `string` | —       | The selling asset. |
 
-```ts
+```typescript
 const depth = await sdk.fetchMarketDepth({
   buying: "CBUY...",
   selling: "CSELL...",
@@ -203,29 +296,42 @@ console.log(depth.asks); // sell side
 console.log(depth.bids); // buy side
 ```
 
-**Params — `AxisMarketsMarketDepthParams`**
+### Network Methods
 
-| Field     | Type      | Description        |
-|-----------|-----------|--------------------|
-| `buying`  | `string?` | The buying asset.  |
-| `selling` | `string?` | The selling asset. |
+#### `setNetwork(network: Networks): void`
 
-- **HTTP:** `GET /v1/protocols/axis-markets/market-depth`
-- **Returns:** `Promise<AxisMarketsMarketDepthResultOutput>`
+Changes the target Stellar network at runtime.
 
-## Data Types
+| Parameter | Type       | Description                 |
+|-----------|------------|-----------------------------|
+| `network` | `Networks` | The Stellar network to use. |
 
-### Order Kinds
-
-```ts
-enum AxisMarketsOrderKind {
-  Limit = 1,      // Execute trade, create a limit order if not fully executed
-  Fill = 2,       // Execute trade without creating a limit order
-  FillOrKill = 3, // Execute trade, cancel if not fully executed
-}
+```typescript
+sdk.setNetwork(Networks.TESTNET);
 ```
 
-### `AxisMarketsOrderOutput`
+---
+
+## Types & Schemas
+
+All types are exported from the extension's `schemas` module and are inferred from their corresponding Valibot schemas.
+
+### Order Types
+
+| Type                     | Description            |
+|--------------------------|------------------------|
+| `AxisMarketsOrderOutput` | A single order record. |
+| `AxisMarketsOrderKind`   | Enum of order kinds.   |
+
+#### `AxisMarketsOrderKind` enum
+
+| Value        | Integer | Description                                                |
+|--------------|---------|------------------------------------------------------------|
+| `Limit`      | `1`     | Execute trade, create a limit order if not fully executed. |
+| `Fill`       | `2`     | Execute trade without creating a limit order.              |
+| `FillOrKill` | `3`     | Execute trade, cancel if not fully executed.               |
+
+#### `AxisMarketsOrderOutput`
 
 | Field       | Type                   | Description                         |
 |-------------|------------------------|-------------------------------------|
@@ -241,7 +347,14 @@ enum AxisMarketsOrderKind {
 | `deleted`   | `boolean`              | Whether the order has been removed. |
 | `timestamp` | `number`               | Last update timestamp.              |
 
-### `AxisMarketsTradeEventOutput`
+### Trade & Swap Types
+
+| Type                          | Description           |
+|-------------------------------|-----------------------|
+| `AxisMarketsTradeEventOutput` | A single trade event. |
+| `AxisMarketsSwapEventOutput`  | A single swap event.  |
+
+#### `AxisMarketsTradeEventOutput`
 
 | Field       | Type     | Description                      |
 |-------------|----------|----------------------------------|
@@ -256,7 +369,7 @@ enum AxisMarketsOrderKind {
 | `timestamp` | `bigint` | Event timestamp.                 |
 | `tx_hash`   | `string` | Transaction hash.                |
 
-### `AxisMarketsSwapEventOutput`
+#### `AxisMarketsSwapEventOutput`
 
 | Field       | Type     | Description               |
 |-------------|----------|---------------------------|
@@ -269,16 +382,23 @@ enum AxisMarketsOrderKind {
 | `timestamp` | `bigint` | Event timestamp.          |
 | `tx_hash`   | `string` | Transaction hash.         |
 
-### `AxisMarketsMarketDepthResultOutput`
+### Market Depth Types
 
-```ts
+| Type                                 | Description                       |
+|--------------------------------------|-----------------------------------|
+| `AxisMarketsMarketDepthResultOutput` | Market depth (order book) result. |
+| `AxisMarketsMarketDepthRecordOutput` | A single price level in the book. |
+
+#### `AxisMarketsMarketDepthResultOutput`
+
+```typescript
 type AxisMarketsMarketDepthResultOutput = {
   asks: AxisMarketsMarketDepthRecordOutput[];
   bids: AxisMarketsMarketDepthRecordOutput[];
 }
 ```
 
-Each **`AxisMarketsMarketDepthRecordOutput`**:
+#### `AxisMarketsMarketDepthRecordOutput`
 
 | Field               | Type     | Description                               |
 |---------------------|----------|-------------------------------------------|
@@ -286,7 +406,34 @@ Each **`AxisMarketsMarketDepthRecordOutput`**:
 | `amount`            | `bigint` | Amount available at this price level.     |
 | `cumulative_amount` | `bigint` | Cumulative amount up to this price level. |
 
-## How it works
+### Query Parameter Interfaces
+
+| Interface                          | Used by            |
+|------------------------------------|--------------------|
+| `AxisMarketsFetchUserOrdersParams` | `queryOrders`      |
+| `AxisMarketsQueryTradesParams`     | `queryLastTrades`  |
+| `AxisMarketsQuerySwapsParams`      | `queryLastSwaps`   |
+| `AxisMarketsMarketDepthParams`     | `fetchMarketDepth` |
+
+### Helper Functions
+
+| Function                            | Description                                               |
+|-------------------------------------|-----------------------------------------------------------|
+| `getAxisMarketsContractId(network)` | Returns the Axis Markets contract ID for a given network. |
+
+### Enums
+
+#### `AxisMarketsContract`
+
+| Key       | Value                                                      |
+|-----------|------------------------------------------------------------|
+| `TESTNET` | `CCJQB4EEQLBL7RHIPYMYG26ZT2QRKEYNGVWWL2EPZCECFI6GZGNXMIEX` |
+
+> ⚠️ `PUBLIC`, `FUTURENET`, `SANDBOX`, and `STANDALONE` networks are **not supported** and will throw an error.
+
+---
+
+## How It Works
 
 Every method follows the same flow:
 
@@ -297,15 +444,87 @@ Every method follows the same flow:
 3. The JSON response is validated asynchronously with `parseAsync` against the corresponding Valibot schema. Numeric
    string fields are coerced to `bigint`.
 
-## Error Handling
+> Responses are parsed with Valibot's `parseAsync`; schema mismatches throw a `ValiError`. Network failures propagate as
+> `wretch` errors.
 
-Responses are parsed with Valibot's `parseAsync`; schema mismatches throw a `ValiError`. Network failures propagate as
-`wretch` errors.
+---
 
-```ts
+## Examples
+
+### Querying and Filtering Orders
+
+```typescript
+import { Networks } from "@stellar/stellar-sdk";
+import { AxisMarketsIndexerSdk } from "@creit-tech/stellar-indexer-sdk/axis-markets";
+
+const sdk = new AxisMarketsIndexerSdk({
+  consumerToken: process.env.STELLAR_INDEXER_TOKEN!,
+  network: Networks.TESTNET,
+});
+
+const orders = await sdk.queryOrders({
+  selling: "CSELL...",
+  includeClosedOrders: false,
+  limit: 200,
+});
+
+for (const order of orders) {
+  console.log(`Order ${ order.id }: ${ order.amount } @ ${ order.price }`);
+}
+```
+
+### Fetching Recent Trades
+
+```typescript
+const trades = await sdk.queryLastTrades({
+  buying: "CBUY...",
+  selling: "CSELL...",
+  limit: 200,
+});
+
+for (const trade of trades) {
+  console.log(`Trade ${ trade.id }: bought ${ trade.bought }, sold ${ trade.sold }`);
+}
+```
+
+### Building an Order Book View
+
+```typescript
+const depth = await sdk.fetchMarketDepth({
+  buying: "CBUY...",
+  selling: "CSELL...",
+});
+
+console.log("Asks (sell side):");
+for (const ask of depth.asks) {
+  console.log(`  ${ ask.amount } @ ${ ask.price } (cumulative: ${ ask.cumulative_amount })`);
+}
+
+console.log("Bids (buy side):");
+for (const bid of depth.bids) {
+  console.log(`  ${ bid.amount } @ ${ bid.price } (cumulative: ${ bid.cumulative_amount })`);
+}
+```
+
+### Error Handling
+
+```typescript
 try {
   const order = await sdk.fetchOrder("123");
 } catch (err) {
   console.error("Failed to fetch order:", err);
 }
+```
+
+### Combining with Base SDK Methods
+
+Since `AxisMarketsIndexerSdk` extends `StellarIndexerSdk`, you have access to base class methods on the same instance:
+
+```typescript
+const [ instanceData ] = await sdk.fetchContractData({
+  contracts: [ "CCJQB4EEQLBL7RHIPYMYG26ZT2QRKEYNGVWWL2EPZCECFI6GZGNXMIEX" ],
+  key: [ {_: "ledger_key_contract_instance"} ],
+  limit: 1,
+  page: 0,
+});
 ```
