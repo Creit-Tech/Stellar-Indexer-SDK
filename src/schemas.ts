@@ -129,13 +129,13 @@ export const ContractEventSchema = object({
   id: string(),
   contract_id: IsStellarContract(),
   topics: union([
-    array(any()),
     pipe(
       record(string(), any()),
       transform((data) => {
         return scValToNative(xdr.ScVal.fromXDR(encode("ScVal", JSON.stringify({ vec: Object.values(data) })), "base64"));
       }),
     ),
+    array(any()),
   ]),
   data: pipe(
     record(string(), any()),
