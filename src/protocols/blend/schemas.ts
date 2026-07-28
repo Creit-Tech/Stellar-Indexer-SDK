@@ -19,11 +19,28 @@ import {
 import { IsStellarAddress, IsStellarContract, StellarIndexerSdkParamsSchema } from "../../schemas.ts";
 import { Networks } from "@stellar/stellar-sdk";
 
+/**
+ * @deprecated - Use the `BlendDeployments` object instead
+ */
 export enum BlendFactoryContract {
   PUBLIC = "CDSYOAVXFY7SM5S64IZPPPYB4GVGGLMQVFREPSQQEZVIWXX5R23G4QSU",
   TESTNET = "CDV6RX4CGPCOKGTBFS52V3LMWQGZN3LCQTXF5RVPOOCG4XVMHXQ4NTF6",
 }
 
+export const BlendDeployments = {
+  PUBLIC: {
+    factory: "CDSYOAVXFY7SM5S64IZPPPYB4GVGGLMQVFREPSQQEZVIWXX5R23G4QSU",
+    cometPool: "CAS3FL6TLZKDGGSISDBWGGPXT3NRR4DYTZD7YOD3HMYO6LTJUVGRVEAM",
+  },
+  TESTNET: {
+    factory: "CDV6RX4CGPCOKGTBFS52V3LMWQGZN3LCQTXF5RVPOOCG4XVMHXQ4NTF6",
+    cometPool: "CA5UTUUPHYL5K22UBRUVC37EARZUGYOSGK3IKIXG2JLCC5ZZLI4BDWDM",
+  },
+};
+
+/**
+ * @deprecated - Use the `getBlendDeployments` functions instead of this
+ */
 export function getBlendPoolFactoryContractId(network: Networks): string {
   switch (network) {
     case Networks.PUBLIC:
@@ -34,6 +51,19 @@ export function getBlendPoolFactoryContractId(network: Networks): string {
     case Networks.SANDBOX:
     case Networks.STANDALONE:
       throw new Error(`Blend's factory in network ${network} is not available.`);
+  }
+}
+
+export function getBlendDeployments(network: Networks) {
+  switch (network) {
+    case Networks.PUBLIC:
+      return BlendDeployments.PUBLIC;
+    case Networks.TESTNET:
+      return BlendDeployments.TESTNET;
+    case Networks.FUTURENET:
+    case Networks.SANDBOX:
+    case Networks.STANDALONE:
+      throw new Error(`Blend's is not available in network ${network}.`);
   }
 }
 
@@ -300,3 +330,47 @@ export const BlendPoolUserPositionHistoryRecordSchema = object({
   timestamp: union([pipe(string(), toBigint(), bigint()), bigint()]),
 });
 export type BlendPoolUserPositionHistoryRecordOutput = InferOutput<typeof BlendPoolUserPositionHistoryRecordSchema>;
+
+export type BlendCometPoolHistoricalEntryInput = InferInput<typeof BlendCometPoolHistoricalEntrySchema>;
+export const BlendCometPoolHistoricalEntrySchema = object({
+  total_blnd: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  total_usdc: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  usdc_blnd_rate: union([pipe(string(), toBigint(), bigint()), bigint()]),
+  timestamp: union([pipe(string(), toBigint(), bigint()), bigint()]),
+});
+export type BlendCometPoolHistoricalEntryOutput = InferOutput<typeof BlendCometPoolHistoricalEntrySchema>;
+
+/**
+ * Optional parameters you can provide to the query
+ */
+export interface BlendCometPoolHistoryParams {
+  /**
+   * This is the period between each result in the query, so for example if "hour" us used then you will get a record per hour inside the date range
+   * If not provided then the API will use "day"
+   */
+  period?: "minute" | "hour" | "day" | "7day" | "14day" | "30day";
+
+  /**
+   * The start of the period from where the query will be done filtered
+   * If not provided then the API will use 7 days before now
+   */
+  fromDate?: Date;
+
+  /**
+   * The end of the period from where the query will be done filtered
+   * If not provided then the API will use now
+   */
+  toDate?: Date;
+
+  /**
+   * The amount of record to return per call, a limit of 200 records is defined by the API
+   * If not provided then the API will use 8
+   */
+  limit?: number;
+
+  /**
+   * The current page of the result
+   * If not provided then the API will use 0
+   */
+  page?: number;
+}

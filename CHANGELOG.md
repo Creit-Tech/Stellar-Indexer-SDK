@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file. See
 [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 0.0.7 (2026-07-27)
+
+#### Add
+
+- Include a new method (`fetchCometPoolHistory`) in the Blend extension so we can fetch historical details from the
+  original comet pool used in the Backstop
+
 ### 0.0.6 (2026-07-22)
 
 #### Change

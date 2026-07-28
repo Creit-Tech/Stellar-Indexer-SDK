@@ -3,6 +3,8 @@ import { StellarIndexerSdk } from "../../sdk.ts";
 import {
   type BlendAuctionOutput,
   BlendAuctionSchema,
+  BlendCometPoolHistoricalEntrySchema,
+  type BlendCometPoolHistoryParams,
   type BlendFetchPoolAssetHistoricalDataParams,
   type BlendFetchPoolAssetHistoricalEmissionsParams,
   type BlendFetchPoolAuctionsParams,
@@ -156,5 +158,17 @@ export class BlendIndexerSdk extends StellarIndexerSdk {
       .get()
       .json();
     return parseAsync(array(BlendUserPositionsSchema), result);
+  }
+
+  /**
+   * Fetch the historical rates (and reserves) for the original comet pool (BLND 80%/USDC 20%)
+   */
+  async fetchCometPoolHistory(params?: BlendCometPoolHistoryParams) {
+    await this.startWasm();
+    const result = await this.api.url(`/v1/protocols/blend/commet-pool/history`)
+      .query(params || {})
+      .get()
+      .json();
+    return parseAsync(array(BlendCometPoolHistoricalEntrySchema), result);
   }
 }

@@ -20,6 +20,7 @@ by [Valibot](https://valibot.dev/).
     - [Auction Methods](#auction-methods)
     - [Event Methods](#event-methods)
     - [User Position Methods](#user-position-methods)
+    - [Comet Pool Methods](#comet-pool-methods)
 - [Types & Schemas](#types--schemas)
 - [Examples](#examples)
 
@@ -27,8 +28,8 @@ by [Valibot](https://valibot.dev/).
 
 ## Installation
 
-This library works with any server-side JavaScript environment: Deno, Bun and Node.js. To install the base library (
-which includes the protocol extensions), you can do:
+This library works with any server-side JavaScript environment: Deno, Bun and Node.js. To install the base library
+(which includes the protocol extensions), you can do:
 
 ```textmate
 npx jsr add @stellar-indexer/stellar-indexer-sdk
@@ -341,6 +342,46 @@ allPositions.forEach((pos) => {
 });
 ```
 
+### Comet Pool Methods
+
+#### `fetchCometPoolHistory(params?: BlendCometPoolHistoryParams): Promise<BlendCometPoolHistoricalEntryOutput[]>`
+
+Fetches **historical rates and reserves** for the Comet pool (BLND 80%/USDC 20%).
+
+| Parameter | Type                          | Description                    |
+|-----------|-------------------------------|--------------------------------|
+| `params`  | `BlendCometPoolHistoryParams` | Query & pagination (optional). |
+
+`BlendCometPoolHistoryParams`:
+
+| Field      | Type                                                          | Default           | Notes                                |
+|------------|---------------------------------------------------------------|-------------------|--------------------------------------|
+| `period`   | `"minute" \| "hour" \| "day" \| "7day" \| "14day" \| "30day"` | `"day"`           | Interval between each result record. |
+| `fromDate` | `Date`                                                        | 7 days before now | Start of the query date range.       |
+| `toDate`   | `Date`                                                        | now               | End of the query date range.         |
+| `limit`    | `number`                                                      | `8`               | Max `200` per call.                  |
+| `page`     | `number`                                                      | `0`               | Zero-based page index.               |
+
+Each returned `BlendCometPoolHistoricalEntryOutput` record contains:
+
+| Field            | Type     | Description                                   |
+|------------------|----------|-----------------------------------------------|
+| `total_blnd`     | `bigint` | Total BLND reserves in the Comet pool.        |
+| `total_usdc`     | `bigint` | Total USDC reserves in the Comet pool.        |
+| `usdc_blnd_rate` | `bigint` | The USDC/BLND rate at the recorded timestamp. |
+| `timestamp`      | `bigint` | Unix timestamp of the record.                 |
+
+```typescript
+const history = await blend.fetchCometPoolHistory({
+  period: "hour",
+  limit: 24,
+});
+
+for (const entry of history) {
+  console.log(`Rate: ${ entry.usdc_blnd_rate }, BLND: ${ entry.total_blnd }, USDC: ${ entry.total_usdc }`);
+}
+```
+
 ---
 
 ## Types & Schemas
@@ -378,10 +419,11 @@ All types are exported from the extension's `schemas` module and are inferred fr
 
 ### Historical Types
 
-| Type                                     | Description                                           |
-|------------------------------------------|-------------------------------------------------------|
-| `BlendPoolAssetHistoricalDataOutput`     | Historical asset data record with ledger & timestamp. |
-| `BlendPoolAssetHistoricalEmissionOutput` | Historical emission record with ledger & timestamp.   |
+| Type                                     | Description                                                      |
+|------------------------------------------|------------------------------------------------------------------|
+| `BlendPoolAssetHistoricalDataOutput`     | Historical asset data record with ledger & timestamp.            |
+| `BlendPoolAssetHistoricalEmissionOutput` | Historical emission record with ledger & timestamp.              |
+| `BlendCometPoolHistoricalEntryOutput`    | Historical Comet pool entry (BLND/USDC totals, rate, timestamp). |
 
 ### Query Parameter Interfaces
 
@@ -391,6 +433,7 @@ All types are exported from the extension's `schemas` module and are inferred fr
 | `BlendFetchPoolEventsParams`                   | `fetchPoolEvents`                   |
 | `BlendFetchPoolAssetHistoricalDataParams`      | `fetchPoolAssetHistoricalData`      |
 | `BlendFetchPoolAssetHistoricalEmissionsParams` | `fetchPoolAssetHistoricalEmissions` |
+| `BlendCometPoolHistoryParams`                  | `fetchCometPoolHistory`             |
 
 ### Helper Functions
 
@@ -469,6 +512,19 @@ const chartData = history.map((r) => ({
   supply: r.b_supply,
   borrow: r.d_supply,
 }));
+```
+
+### Fetching Comet Pool Rate History
+
+```typescript
+const cometHistory = await blend.fetchCometPoolHistory({
+  period: "day",
+  limit: 7,
+});
+
+for (const entry of cometHistory) {
+  console.log(`Timestamp: ${ entry.timestamp }, USDC/BLND Rate: ${ entry.usdc_blnd_rate }`);
+}
 ```
 
 ### Combining with Base SDK Methods
