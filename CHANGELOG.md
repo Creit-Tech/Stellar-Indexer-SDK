@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file. See
 [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 0.0.8 (2026-07-28)
+
+#### Fix
+
+- change `commet` for `comet`
+
 ### 0.0.7 (2026-07-27)
 
 #### Add

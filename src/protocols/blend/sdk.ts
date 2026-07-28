@@ -165,7 +165,7 @@ export class BlendIndexerSdk extends StellarIndexerSdk {
    */
   async fetchCometPoolHistory(params?: BlendCometPoolHistoryParams) {
     await this.startWasm();
-    const result = await this.api.url(`/v1/protocols/blend/commet-pool/history`)
+    const result = await this.api.url(`/v1/protocols/blend/comet-pool/history`)
       .query(params || {})
       .get()
       .json();
