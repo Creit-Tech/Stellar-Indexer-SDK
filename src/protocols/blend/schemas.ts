@@ -333,6 +333,7 @@ export type BlendPoolUserPositionHistoryRecordOutput = InferOutput<typeof BlendP
 
 export type BlendCometPoolHistoricalEntryInput = InferInput<typeof BlendCometPoolHistoricalEntrySchema>;
 export const BlendCometPoolHistoricalEntrySchema = object({
+  total_shares: union([pipe(string(), toBigint(), bigint()), bigint()]),
   total_blnd: union([pipe(string(), toBigint(), bigint()), bigint()]),
   total_usdc: union([pipe(string(), toBigint(), bigint()), bigint()]),
   usdc_blnd_rate: union([pipe(string(), toBigint(), bigint()), bigint()]),

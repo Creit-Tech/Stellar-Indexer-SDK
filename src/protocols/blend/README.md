@@ -366,6 +366,7 @@ Each returned `BlendCometPoolHistoricalEntryOutput` record contains:
 
 | Field            | Type     | Description                                   |
 |------------------|----------|-----------------------------------------------|
+| `total_shares`   | `bigint` | Total shares issued by the Comet pool.        |
 | `total_blnd`     | `bigint` | Total BLND reserves in the Comet pool.        |
 | `total_usdc`     | `bigint` | Total USDC reserves in the Comet pool.        |
 | `usdc_blnd_rate` | `bigint` | The USDC/BLND rate at the recorded timestamp. |
